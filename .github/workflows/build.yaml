@@ -11,16 +11,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v1.6.0
+        uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: ${{ matrix.dotnet-version }}
+          dotnet-version: '3.1.x' #${{ matrix.dotnet-version }}
       - name: Install dependencies
         run: dotnet restore
       - name: Build
         run: dotnet build --configuration Release --no-restore
-      - name: Test with dotnet
+      - name: Test
         run: dotnet test --logger trx --results-directory "TestResults-${{ matrix.dotnet-version }}"
-      - name: Upload dotnet test results
+      - name: Upload test results
         uses: actions/upload-artifact@v2
         with:
           name: dotnet-results-${{ matrix.dotnet-version }}
