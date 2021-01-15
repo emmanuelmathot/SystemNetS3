@@ -5,9 +5,6 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        dotnet-version: ["2.2.103", "3.0", "3.1.x"]
     # Service containers to run with `runner-job`
     services:
       # Label used to access the service container
@@ -16,11 +13,13 @@ jobs:
         image: localstack/localstack
         #
         ports:
-          # Opens tcp port 6379 on the host and service container
+          # Opens tcp port 4566 on the host and service container
           - 4566:4566
         env:
           DEFAULT_REGION: "eu-central-1"
           SERVICES: "s3"
+          AWS_ACCESS_KEY_ID: localkey
+          AWS_SECRET_ACCESS_KEY: localsecret
           DEBUG: 1
     steps:
       - uses: actions/checkout@v2
