@@ -21,6 +21,10 @@ jobs:
           AWS_ACCESS_KEY_ID: localkey
           AWS_SECRET_ACCESS_KEY: localsecret
           DEBUG: 1
+    env:
+      AWS_ACCESS_KEY_ID: localkey
+      AWS_SECRET_ACCESS_KEY: localsecret
+      AWS_DEFAULT_REGION: eu-central-1
     steps:
       - uses: actions/checkout@v2
       - name: Setup dotnet
