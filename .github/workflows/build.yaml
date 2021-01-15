@@ -37,6 +37,7 @@ jobs:
         run: |
           echo "${{ toJson(job) }}"
           docker logs "${{ job.services.localstack.id }}"
+        if: ${{ always() }}
       - name: Upload test results
         uses: actions/upload-artifact@v2
         with:
