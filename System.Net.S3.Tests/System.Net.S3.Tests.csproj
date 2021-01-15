@@ -22,7 +22,7 @@
     <PackageReference Include="Serilog.Sinks.File" Version="4.1.0"/>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\S3WebRequest\S3WebRequest.csproj"/>
+    <ProjectReference Include="..\System.Net.S3\System.Net.S3.csproj"/>
   </ItemGroup>
   <ItemGroup>
     <Content Include="appsettings.json" CopyToOutputDirectory="Always" CopyToPublishDirectory="PreserveNewest"/>

@@ -4,18 +4,18 @@ using DotNet.Testcontainers.Containers.Modules;
 using DotNet.Testcontainers.Containers.OutputConsumers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace S3WebRequest.Tests
+namespace System.Net.S3.Tests
 {
     public class LocalStackFixture : IAsyncLifetime
     {
         private readonly TestcontainersContainer _localStackContainer;
+        private readonly IOptions<LocalStackOptions> options;
 
-        public ServiceCollection Collection { get; }
-
-        public LocalStackFixture()
+        public LocalStackFixture(IOptions<LocalStackOptions> options)
         {
             var localStackBuilder = new TestcontainersBuilder<TestcontainersContainer>()
                 .WithImage("localstack/localstack")
@@ -28,15 +28,18 @@ namespace S3WebRequest.Tests
                 .WithPortBinding(4566, 4566);
 
             _localStackContainer = localStackBuilder.Build();
+            this.options = options;
         }
         public async Task InitializeAsync()
         {
-            await _localStackContainer.StartAsync();
+            if (options.Value.Enabled)
+                await _localStackContainer.StartAsync();
         }
 
         public async Task DisposeAsync()
         {
-            await _localStackContainer.StopAsync();
+            if (options.Value.Enabled)
+                await _localStackContainer.StopAsync();
         }
     }
 }

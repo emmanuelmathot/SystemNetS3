@@ -1,10 +1,11 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Xunit.DependencyInjection;
 using Xunit.DependencyInjection.Logging;
 
-namespace S3WebRequest.Tests
+namespace System.Net.S3.Tests
 {
     public class Startup
     {
@@ -20,6 +21,7 @@ namespace S3WebRequest.Tests
             services.AddOptions();
             var awsOptions = Configuration.GetAWSOptions("AWS");
             services.AddDefaultAWSOptions(awsOptions);
+            services.Configure<LocalStackOptions>(Configuration.GetSection("LocalStack"));
         }
 
         public void Configure(ILoggerFactory loggerfactory, ITestOutputHelperAccessor accessor)
@@ -27,12 +29,14 @@ namespace S3WebRequest.Tests
             loggerfactory.AddProvider(new XunitTestOutputLoggerProvider(accessor));
         }
 
-        public static IConfiguration GetApplicationConfiguration()
+        public IConfiguration GetApplicationConfiguration()
         {
-            return new ConfigurationBuilder()
+            var builder = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", optional: true)
                 .AddEnvironmentVariables()
                 .Build();
+
+            return builder;
         }
     }
 }

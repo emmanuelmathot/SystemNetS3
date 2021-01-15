@@ -2,7 +2,7 @@ using System;
 using System.Net;
 using Xunit;
 
-namespace S3WebRequest.Tests
+namespace System.Net.S3.Tests
 {
     [Collection(nameof(S3TestCollection))]
     public class BaseTests

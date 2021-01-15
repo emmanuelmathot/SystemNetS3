@@ -4,13 +4,13 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Amazon.S3.Model;
-using S3WebRequest.Tests.XUnit;
+using System.Net.S3.Tests.XUnit;
 using Xunit;
 
-namespace S3WebRequest.Tests
+namespace System.Net.S3.Tests
 {
     [Collection(nameof(S3TestCollection))]
-    [TestCaseOrderer("S3WebRequest.Tests.XUnit.PriorityOrderer", "S3WebRequest.Tests")]
+    [TestCaseOrderer("System.Net.S3.Tests.XUnit.PriorityOrderer", "System.Net.S3.Tests")]
     public class UploadTests
     {
         // 0. List no bucket

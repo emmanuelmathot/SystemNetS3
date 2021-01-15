@@ -4,7 +4,7 @@ using System;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace S3WebRequest.Tests
+namespace System.Net.S3.Tests
 {
     public class WebRequestFixture
     {
