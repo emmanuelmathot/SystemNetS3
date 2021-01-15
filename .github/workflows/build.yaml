@@ -36,7 +36,7 @@ jobs:
       - name: LocalStack logs
         run: |
           echo "${{ toJson(job) }}"
-          apt-get install -y python python-pip
+          sudo apt-get install -y python python-pip
           sudo pip install awscli
           docker logs "${{ job.services.localstack.id }}"
           aws --debug --endpoint-url=http://localhost:4566 s3 mb s3://test2
