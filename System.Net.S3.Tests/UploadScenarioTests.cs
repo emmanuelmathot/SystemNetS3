@@ -11,7 +11,7 @@ namespace System.Net.S3.Tests
 {
     [Collection(nameof(S3TestCollection))]
     [TestCaseOrderer("System.Net.S3.Tests.XUnit.PriorityOrderer", "System.Net.S3.Tests")]
-    public class UploadTests
+    public class UploadScenarioTests : BaseTests
     {
         // 0. List no bucket
         [Fact, TestPriority(0)]

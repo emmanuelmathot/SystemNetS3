@@ -15,7 +15,7 @@ namespace System.Net.S3.Tests
         private readonly TestcontainersContainer _localStackContainer;
         private readonly IOptions<LocalStackOptions> options;
 
-        public LocalStackFixture(IOptions<LocalStackOptions> options)
+        public LocalStackFixture(IOptions<LocalStackOptions> options, Amazon.Extensions.NETCore.Setup.AWSOptions awsOptions)
         {
             var localStackBuilder = new TestcontainersBuilder<TestcontainersContainer>()
                 .WithImage("localstack/localstack")
@@ -26,6 +26,16 @@ namespace System.Net.S3.Tests
                 .WithEnvironment("DOCKER_HOST", "unix:///var/run/docker.sock")
                 .WithEnvironment("DEBUG", "1")
                 .WithPortBinding(4566, 4566);
+
+            if (awsOptions != null)
+            {
+                if (awsOptions.Credentials != null)
+                {
+                    var awsCreds = awsOptions.Credentials.GetCredentials();
+                    localStackBuilder.WithEnvironment("AWS_ACCESS_KEY_ID", awsCreds.AccessKey)
+                        .WithEnvironment("AWS_SECRET_ACCESS_KEY", awsCreds.SecretKey);
+                }
+            }
 
             _localStackContainer = localStackBuilder.Build();
             this.options = options;

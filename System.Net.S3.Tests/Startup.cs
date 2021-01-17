@@ -1,3 +1,5 @@
+using Amazon.Runtime;
+using Amazon.Runtime.CredentialManagement;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -20,6 +22,10 @@ namespace System.Net.S3.Tests
                 });
             services.AddOptions();
             var awsOptions = Configuration.GetAWSOptions("AWS");
+            var chain = new CredentialProfileStoreChain();
+            AWSCredentials awsCredentials;
+            chain.TryGetAWSCredentials(awsOptions.Profile, out awsCredentials);
+            awsOptions.Credentials = awsCredentials;
             services.AddDefaultAWSOptions(awsOptions);
             services.Configure<LocalStackOptions>(Configuration.GetSection("LocalStack"));
         }
