@@ -3,7 +3,7 @@ using System.IO;
 using System.Net.S3;
 using System.Threading.Tasks;
 
-namespace S3WebRequest.Tests
+namespace System.Net.S3.Tests
 {
     internal class Helpers
     {

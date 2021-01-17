@@ -1,0 +1,54 @@
+name: dotnet build
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Service containers to run with `runner-job`
+    services:
+      # Label used to access the service container
+      localstack:
+        # Docker Hub image
+        image: localstack/localstack
+        #
+        ports:
+          # Opens tcp port 4566 on the host and service container
+          - 4566:4566
+        env:
+          DEFAULT_REGION: "eu-central-1"
+          SERVICES: "s3"
+          AWS_ACCESS_KEY_ID: localkey
+          AWS_SECRET_ACCESS_KEY: localsecret
+          DEBUG: 1
+    env:
+      AWS_ACCESS_KEY_ID: localkey
+      AWS_SECRET_ACCESS_KEY: localsecret
+      AWS_DEFAULT_REGION: eu-central-1
+      LocalStack__Enabled: "false"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '3.1.x' #${{ matrix.dotnet-version }}
+      - name: Install dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+      - name: Test
+        run: dotnet test --logger trx --results-directory "TestResults-${{ matrix.dotnet-version }}"
+      - name: LocalStack logs
+        run: |
+          echo "${{ toJson(job) }}"
+          # sudo pip install awscli
+          # aws --debug --endpoint-url=http://localhost:4566 s3 mb s3://test2
+          docker logs "${{ job.services.localstack.id }}"
+        if: ${{ always() }}
+      - name: Upload test results
+        uses: actions/upload-artifact@v2
+        with:
+          name: dotnet-results-${{ matrix.dotnet-version }}
+          path: TestResults-${{ matrix.dotnet-version }}
+        # Use always() to always run this step to publish test results when there are test failures
+        if: ${{ always() }}        

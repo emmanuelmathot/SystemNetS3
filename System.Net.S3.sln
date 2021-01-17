@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "S3WebRequest", "S3WebRequest\S3WebRequest.csproj", "{AC621DD5-EFDE-4BD1-B899-132F88082DD3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.S3", "System.Net.S3\System.Net.S3.csproj", "{AC621DD5-EFDE-4BD1-B899-132F88082DD3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "S3WebRequest.Tests", "S3WebRequest.Tests\S3WebRequest.Tests.csproj", "{CCBF19D8-028B-47C5-AE14-142D0B1BC75B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.S3.Tests", "System.Net.S3.Tests\System.Net.S3.Tests.csproj", "{CCBF19D8-028B-47C5-AE14-142D0B1BC75B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,6 +1,6 @@
 using System;
 
-namespace S3WebRequest.Tests.XUnit
+namespace System.Net.S3.Tests.XUnit
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class TestPriorityAttribute : Attribute

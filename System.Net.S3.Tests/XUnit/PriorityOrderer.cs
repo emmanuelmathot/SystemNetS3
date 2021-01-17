@@ -3,7 +3,7 @@ using System.Linq;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
-namespace S3WebRequest.Tests.XUnit
+namespace System.Net.S3.Tests.XUnit
 {
     public class PriorityOrderer : ITestCaseOrderer
     {

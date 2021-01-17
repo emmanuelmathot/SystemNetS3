@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.S3;
+using Amazon.Runtime.CredentialManagement;
 using Amazon.S3;
 using Amazon.S3.Util;
 using Microsoft.Extensions.Logging;

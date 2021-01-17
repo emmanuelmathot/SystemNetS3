@@ -1,0 +1,26 @@
+name: dotnet package
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '3.1.x' # SDK Version to use.
+        # source-url: https://nuget.pkg.github.com/<owner>/index.json
+      env:
+        NUGET_AUTH_TOKEN: ${{secrets.NUGET_API_KEY}}
+    - run: dotnet build <my project>
+    - name: Create the package
+      run: dotnet pack --configuration Release System.Net.S3/System.Net.S3.csproj
+    - name: Publish the package to GPR
+      run: dotnet nuget push System.Net.S3/bin/Release/*.nupkg -s https://nuget.pkg.github.com/emmanuelmathot/index.json
+    - name: Publish the package to Nuget
+      run: dotnet nuget push System.Net.S3/bin/Release/*.nupkg
+        
