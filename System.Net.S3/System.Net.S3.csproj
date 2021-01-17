@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <PackageId>SystemNetS3</PackageId>
-    <Title>SystemNetS3</Title>
+    <PackageId>S3.System.Net</PackageId>
+    <Title>System.Net.S3</Title>
     <Description>Library for using S3 as WebRequests</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <Version>0.1.0</Version>
