@@ -15,7 +15,7 @@ jobs:
         # source-url: https://nuget.pkg.github.com/<owner>/index.json
       env:
         NUGET_AUTH_TOKEN: ${{secrets.NUGET_API_KEY}}
-    - run: dotnet build <my project>
+    - run: dotnet build
     - name: Create the package
       run: dotnet pack --configuration Release System.Net.S3/System.Net.S3.csproj
     - name: Publish the package to GPR
