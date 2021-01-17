@@ -18,7 +18,7 @@ jobs:
     - name: Create the package
       run: dotnet pack --configuration Release System.Net.S3/System.Net.S3.csproj
     - name: Publish the package to Nuget
-      run: dotnet nuget push System.Net.S3/bin/Release/*.nupkg -k ${{secrets.NUGET_API_KEY}}
+      run: dotnet nuget push System.Net.S3/bin/Release/*.nupkg -s https://www.nuget.org/api/v2/package -k ${{secrets.NUGET_API_KEY}}
     - name: Publish the package to GPR
       run: dotnet nuget push System.Net.S3/bin/Release/*.nupkg -s https://nuget.pkg.github.com/emmanuelmathot/index.json -k ${{secrets.GITHUB_TOKEN}}
    
