@@ -20,6 +20,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\LICENSE" Pack="true" PackagePath=""/>
-    <None Include="..\docs\images\stac_logo.png" Pack="true" PackagePath=""/>
+    <None Include="..\docs\images\s3logo.png" Pack="true" PackagePath=""/>
   </ItemGroup>
 </Project>
