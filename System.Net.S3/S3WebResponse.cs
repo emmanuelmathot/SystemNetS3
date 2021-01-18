@@ -25,5 +25,19 @@ namespace System.Net.S3
                 return ((GetObjectResponse)StreamResponse).ResponseStream;
             return null;
         }
+
+        public override WebHeaderCollection Headers
+        {
+            get
+            {
+                if (StreamResponse.GetType() == typeof(GetObjectResponse))
+                    return ((GetObjectResponse)StreamResponse).Headers.ToWebHeaderCollection();
+                WebHeaderCollection webHeaderCollection = new WebHeaderCollection();
+                webHeaderCollection.Add(HttpRequestHeader.ContentLength, StreamResponse.ContentLength.ToString());
+                return webHeaderCollection;
+            }
+        }
+
+        
     }
 }

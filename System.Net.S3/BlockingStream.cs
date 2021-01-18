@@ -46,7 +46,7 @@ namespace System.Net.S3
         }
 
         public override bool CanRead { get { return true; } }
-        public override bool CanSeek { get { return true; } }
+        public override bool CanSeek { get { return false; } }
         public override bool CanWrite { get { return !_illegalToWrite; } }
 
         public override void Flush() { }
