@@ -19,13 +19,13 @@ namespace System.Net.S3
         private Uri m_Uri;
         private S3MethodInfo m_MethodInfo;
         private string m_MoveTo;
-        private ICredentials m_AuthInfo;
         private int m_Timeout;
         private long m_ContentLength;
         private string m_ConnectionGroupName;
         private Exception m_Exception;
 
         private AmazonS3Client m_AmazonS3 = null;
+        private readonly S3BucketsOptions s3BucketsOptions;
         private S3WebResponse m_S3WebResponse;
         private bool m_GetResponseStarted;
         private DateTime m_StartTime;
@@ -36,7 +36,7 @@ namespace System.Net.S3
         private AmazonWebServiceRequest m_Request;
         private string m_BucketName;
         private string m_Key;
-        private bool m_RequestPayer;
+        private RequestPayer m_RequestPayer;
         private Task m_ResponseTask = null;
         private string m_ContentType = "application/octet-stream";
         private readonly ILogger log;
@@ -46,16 +46,15 @@ namespace System.Net.S3
         private static readonly S3Credential DefaultS3Credential = new S3Credential(null, null);
 
 
-        internal S3WebRequest(Uri uri, ILogger log, AmazonS3Client amazonS3 = null)
+        internal S3WebRequest(Uri uri, ILogger log, AmazonS3Client amazonS3, S3BucketsOptions s3BucketsConfiguration = null)
         {
             this.log = log;
-            log.LogInformation("{0} {1} {2}", this, ".ctor", uri.ToString());
-
             if (!uri.Scheme.Equals("s3", StringComparison.CurrentCultureIgnoreCase))
                 throw new ArgumentOutOfRangeException("uri");
 
             m_Uri = uri;
-            m_AmazonS3 = amazonS3 ?? S3WebRequestCreate.CreateClientFromUri(uri);
+            m_AmazonS3 = amazonS3;
+            this.s3BucketsOptions = s3BucketsConfiguration;
             SetRequestParametersWithUri(uri);
             m_MethodInfo = S3MethodInfo.GetMethodInfo(S3RequestMethods.DownloadObject);
         }
@@ -67,6 +66,8 @@ namespace System.Net.S3
                 AmazonS3Uri amazonS3Uri = new AmazonS3Uri(uri);
                 m_BucketName = amazonS3Uri.Bucket;
                 m_Key = amazonS3Uri.Key;
+                if (s3BucketsOptions != null && s3BucketsOptions.ContainsKey(m_BucketName))
+                    m_RequestPayer = RequestPayer.FindValue(s3BucketsOptions[BucketName].Payer);
                 return;
             }
             catch { }
@@ -93,6 +94,8 @@ namespace System.Net.S3
                         m_Key = string.Join("/", pathParts.Skip(2));
                 }
             }
+            if (s3BucketsOptions != null && s3BucketsOptions.ContainsKey(m_BucketName))
+                    m_RequestPayer = RequestPayer.FindValue(s3BucketsOptions[BucketName].Payer);
         }
 
         internal static S3Credential DefaultCredential
@@ -102,6 +105,7 @@ namespace System.Net.S3
                 return DefaultS3Credential;
             }
         }
+
 
         /// <summary>
         /// <para>
@@ -173,19 +177,10 @@ namespace System.Net.S3
         {
             get
             {
-                return m_AuthInfo;
+                return null;
             }
             set
             {
-                if (InUse)
-                {
-                    throw new InvalidOperationException("Cannot change credentials while request in use");
-                }
-                if (value == null)
-                {
-                    throw new ArgumentNullException("value");
-                }
-                m_AuthInfo = value;
             }
         }
 
@@ -336,7 +331,7 @@ namespace System.Net.S3
                     throw new ProtocolViolationException("GetRequestStream is not possible with method " + m_MethodInfo.Method);
                 }
                 CheckError();
-                BlockingStream uploadStream = new BlockingStream();
+                BlockingStream uploadStream = new BlockingStream(Convert.ToUInt64(m_ContentLength));
                 asyncResult = new S3GetUploadStream(uploadStream, state, callback);
                 m_UploadStream = uploadStream;
                 Task.Run(() => callback.Invoke(asyncResult));
@@ -345,10 +340,6 @@ namespace System.Net.S3
             {
                 log.LogError(exception, "error during GetRequestStream");
                 throw;
-            }
-            finally
-            {
-                log.LogDebug("GetRequestStream success");
             }
 
             return asyncResult;
@@ -366,7 +357,8 @@ namespace System.Net.S3
                 m_GetResponseStarted = true;
                 CheckError();
                 // Let's make the request asynchronously
-                asyncResult = SubmitRequest();
+                SubmitRequest();
+                asyncResult = new S3GetResponseStreamResult(m_ResponseTask, state);
                 if (callback != null)
                 {
                     // Make the callback
@@ -377,10 +369,6 @@ namespace System.Net.S3
             {
                 log.LogError(exception, "error during GetResponse");
                 throw;
-            }
-            finally
-            {
-                log.LogDebug("GetResponse success");
             }
 
             return asyncResult;
@@ -413,10 +401,6 @@ namespace System.Net.S3
                 log.LogError(exception, "error during EndGetRequestStream");
                 throw;
             }
-            finally
-            {
-                log.LogDebug("EndGetRequestStream success");
-            }
 
             return requestStream;
         }
@@ -430,27 +414,42 @@ namespace System.Net.S3
                 {
                     throw new ArgumentNullException("asyncResult");
                 }
-
-                Task requestTask = asyncResult as Task;
-                if (requestTask == null)
-                {
-                    throw new ArgumentException("asyncResult not an S3 async result");
-                }
                 // Let's complete the request
                 CompleteRequest();
                 CheckError();
             }
+
             catch (Exception exception)
             {
-                log.LogError(exception, "error during EndGetRequestStream");
+                log.LogError(exception, "error during EndGetResponse");
                 throw;
-            }
-            finally
-            {
-                log.LogDebug("EndGetRequestStream success");
             }
 
             return m_S3WebResponse;
+        }
+
+        public override WebHeaderCollection Headers
+        {
+            get
+            {
+                return new WebHeaderCollection();
+            }
+            set
+            {
+
+            }
+        }
+
+        public override IWebProxy Proxy
+        {
+            get
+            {
+                return null;
+            }
+            set
+            {
+
+            }
         }
 
         public override Stream GetRequestStream()
@@ -475,9 +474,12 @@ namespace System.Net.S3
             return Task.Factory.FromAsync(BeginGetResponse, EndGetResponse, null);
         }
 
+
+
         private void CompleteRequest()
         {
-            m_ResponseTask.Wait();
+            m_ResponseTask.GetAwaiter().GetResult();
+            if (m_S3WebResponse != null) return;
             switch (m_MethodInfo.Operation)
             {
                 case S3Operation.GetObject:
@@ -538,7 +540,7 @@ namespace System.Net.S3
                 throw new ArgumentException("Missing bucket name for PutObject operation");
 
             if (string.IsNullOrEmpty(m_Key))
-                throw new ArgumentException("Missing key for PutObject operation");   
+                throw new ArgumentException("Missing key for PutObject operation");
 
             return new PutObjectRequest
             {
@@ -549,7 +551,7 @@ namespace System.Net.S3
                 // UseChunkEncoding = false,
                 // AutoResetStreamPosition = false,
                 // AutoCloseStream = false,
-                Headers = { ContentLength = m_ContentLength }
+                Headers = { ContentLength = m_ContentLength },
             };
         }
 
@@ -570,7 +572,7 @@ namespace System.Net.S3
             {
                 BucketName = m_BucketName,
                 Prefix = m_Key,
-                RequestPayer = m_RequestPayer ? RequestPayer.Requester : null,
+                RequestPayer = m_RequestPayer
             };
         }
 
@@ -580,7 +582,7 @@ namespace System.Net.S3
             {
                 BucketName = m_BucketName,
                 Key = m_Key,
-                RequestPayer = m_RequestPayer ? RequestPayer.Requester : null,
+                RequestPayer = m_RequestPayer
             };
         }
 
@@ -602,5 +604,7 @@ namespace System.Net.S3
 
             return tcs.Task.Result;
         }
+
+
     }
 }
