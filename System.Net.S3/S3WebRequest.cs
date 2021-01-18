@@ -66,8 +66,8 @@ namespace System.Net.S3
                 AmazonS3Uri amazonS3Uri = new AmazonS3Uri(uri);
                 m_BucketName = amazonS3Uri.Bucket;
                 m_Key = amazonS3Uri.Key;
-                m_RequestPayer = s3BucketsOptions.ContainsKey(m_BucketName) ? 
-                    RequestPayer.FindValue(s3BucketsOptions[BucketName].Payer) : null;
+                if (s3BucketsOptions != null && s3BucketsOptions.ContainsKey(m_BucketName))
+                    m_RequestPayer = RequestPayer.FindValue(s3BucketsOptions[BucketName].Payer);
                 return;
             }
             catch { }
@@ -94,8 +94,8 @@ namespace System.Net.S3
                         m_Key = string.Join("/", pathParts.Skip(2));
                 }
             }
-            m_RequestPayer = s3BucketsOptions.ContainsKey(m_BucketName) ? 
-                    RequestPayer.FindValue(s3BucketsOptions[BucketName].Payer) : null;
+            if (s3BucketsOptions != null && s3BucketsOptions.ContainsKey(m_BucketName))
+                    m_RequestPayer = RequestPayer.FindValue(s3BucketsOptions[BucketName].Payer);
         }
 
         internal static S3Credential DefaultCredential
