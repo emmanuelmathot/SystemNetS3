@@ -12,6 +12,8 @@
     <PackageTags>S3;Amazon;Net;Request</PackageTags>
     <Authors>emmanuelmathot</Authors>
     <PackageIcon>s3logo.png</PackageIcon>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.9"/>
