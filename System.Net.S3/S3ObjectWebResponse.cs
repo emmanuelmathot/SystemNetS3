@@ -11,6 +11,10 @@ namespace System.Net.S3
         {
         }
 
+        public S3ObjectWebResponse(AmazonWebServiceResponse streamResponse) : this((T)streamResponse)
+        {
+        }
+
         public T GetObject() => (T)StreamResponse;
 
         public override string ContentType

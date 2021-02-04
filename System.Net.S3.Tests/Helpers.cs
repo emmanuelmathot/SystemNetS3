@@ -7,7 +7,7 @@ namespace System.Net.S3.Tests
 {
     internal class Helpers
     {
-        internal static Stream RunContentStreamGenerator(int sizeInMB, Stream stream)
+        internal static void RunContentStreamGenerator(int sizeInMB, Stream stream)
         {
             byte[] data = new byte[8192];
             Random rng = new Random();
@@ -20,7 +20,6 @@ namespace System.Net.S3.Tests
                 }
                 stream.Close();
             });
-            return stream;
         }
     }
 }

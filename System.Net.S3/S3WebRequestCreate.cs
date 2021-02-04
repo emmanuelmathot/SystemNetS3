@@ -28,8 +28,9 @@ namespace System.Net.S3
             // Create client from config
             try
             {
-                if (options != null)
+                if (options != null){
                     client = options?.CreateServiceClient<IAmazonS3>();
+                }
             }
             catch(TargetInvocationException e)
             {

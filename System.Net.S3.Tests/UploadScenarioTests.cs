@@ -59,19 +59,34 @@ namespace System.Net.S3.Tests
         {
             System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1/testfile1.txt");
             s3WebRequest.Method = "POST";
+            s3WebRequest.ContentLength = 2 * 1024 * 1024;
 
             Stream uploadStream = await s3WebRequest.GetRequestStreamAsync();
 
-            Helpers.RunContentStreamGenerator(128, uploadStream);
-
-            s3WebRequest.ContentLength = 128 * 1024 * 1024;
+            Helpers.RunContentStreamGenerator(2, uploadStream);
 
             System.Net.S3.S3WebResponse s3WebResponse = (System.Net.S3.S3WebResponse)await s3WebRequest.GetResponseAsync();
 
             Assert.Equal(200, s3WebResponse.StatusCode);
+
+            s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1/testfile2.txt");
+            s3WebRequest.Method = "POST";
+            s3WebRequest.ContentLength = 107;
+
+            uploadStream = await s3WebRequest.GetRequestStreamAsync();
+
+            Task.Run(() =>
+            {
+                uploadStream.Write(new byte[107], 0, 107);
+                uploadStream.Close();
+            });
+
+            s3WebResponse = (System.Net.S3.S3WebResponse)await s3WebRequest.GetResponseAsync();
+
+            Assert.Equal(200, s3WebResponse.StatusCode);
         }
 
-        // 4. Upload Test file
+        // 4. List Test file
         [Fact, TestPriority(4)]
         public async Task S3ListUploadedFile()
         {
