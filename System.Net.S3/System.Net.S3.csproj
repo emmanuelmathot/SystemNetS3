@@ -5,13 +5,15 @@
     <Title>System.Net.S3</Title>
     <Description>Library for using S3 as WebRequests</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <Version>0.1.1</Version>
+    <Version>0.1.2</Version>
     <Authors>Emmanuel Mathot</Authors>
     <RepositoryUrl>https://github.com/emmanuelmathot/SystemNetS3</RepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <PackageTags>S3;Amazon;Net;Request</PackageTags>
     <Authors>emmanuelmathot</Authors>
     <PackageIcon>s3logo.png</PackageIcon>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.9"/>

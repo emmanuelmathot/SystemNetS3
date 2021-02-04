@@ -2,10 +2,12 @@
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Amazon.S3.Transfer;
 using Amazon.S3.Util;
 using Microsoft.Extensions.Logging;
 
@@ -16,7 +18,6 @@ namespace System.Net.S3
 
         private static UriParser S3Uri = new GenericUriParser(GenericUriParserOptions.Default);
 
-        private Uri m_Uri;
         private S3MethodInfo m_MethodInfo;
         private string m_MoveTo;
         private int m_Timeout;
@@ -31,14 +32,15 @@ namespace System.Net.S3
         private DateTime m_StartTime;
         private object m_SyncObject;
         private bool m_Async;
-        private Stream m_UploadStream;
+        private Task<BlockingStream> m_UploadStream = Task.FromResult<BlockingStream>(null);
         private bool m_GetRequestStreamStarted;
         private AmazonWebServiceRequest m_Request;
-        private string m_BucketName;
-        private string m_Key;
+        public string m_BucketName;
+        public string m_Key;
         private RequestPayer m_RequestPayer;
-        private Task m_ResponseTask = null;
+        private Task<AmazonWebServiceResponse> m_ResponseTask = null;
         private string m_ContentType = "application/octet-stream";
+        private string m_Host;
         private readonly ILogger log;
 
         private readonly Regex regEx = new Regex(@"^s3://(?'hostOrBucket'[^/]*)(/.*)?$");
@@ -52,7 +54,6 @@ namespace System.Net.S3
             if (!uri.Scheme.Equals("s3", StringComparison.CurrentCultureIgnoreCase))
                 throw new ArgumentOutOfRangeException("uri");
 
-            m_Uri = uri;
             m_AmazonS3 = amazonS3;
             this.s3BucketsOptions = s3BucketsConfiguration;
             SetRequestParametersWithUri(uri);
@@ -63,7 +64,7 @@ namespace System.Net.S3
         {
             try
             {
-                AmazonS3Uri amazonS3Uri = new AmazonS3Uri(uri);
+                AmazonS3Uri amazonS3Uri = new AmazonS3Uri(uri.ToString());
                 m_BucketName = amazonS3Uri.Bucket;
                 m_Key = amazonS3Uri.Key;
                 if (s3BucketsOptions != null && s3BucketsOptions.ContainsKey(m_BucketName))
@@ -73,17 +74,21 @@ namespace System.Net.S3
             catch { }
             Match match = regEx.Match(uri.OriginalString);
             var absolutePath = uri.AbsolutePath;
-            if (match.Success)
+            if (match.Success && !((AmazonS3Config)m_AmazonS3.Config).ForcePathStyle)
             {
                 try
                 {
                     Dns.GetHostEntry(match.Groups["hostOrBucket"].Value);
+                    m_Host = match.Groups["hostOrBucket"].Value;
                 }
                 catch
                 {
-                    absolutePath = "/" + uri.Host + absolutePath;
                     ((AmazonS3Config)m_AmazonS3.Config).ForcePathStyle = true;
                 }
+            }
+
+            if (((AmazonS3Config)m_AmazonS3.Config).ForcePathStyle) {
+                absolutePath = "/" + uri.Host + absolutePath;
 
                 var pathParts = absolutePath.Split('/');
                 if (pathParts.Length >= 2 && !string.IsNullOrEmpty(pathParts[1]))
@@ -91,11 +96,11 @@ namespace System.Net.S3
                     if (string.IsNullOrEmpty(m_BucketName))
                         m_BucketName = pathParts[1];
                     if (string.IsNullOrEmpty(m_Key))
-                        m_Key = string.Join("/", pathParts.Skip(2));
+                        m_Key = absolutePath.Replace(m_BucketName, "").TrimStart('/');
                 }
             }
             if (s3BucketsOptions != null && s3BucketsOptions.ContainsKey(m_BucketName))
-                    m_RequestPayer = RequestPayer.FindValue(s3BucketsOptions[BucketName].Payer);
+                m_RequestPayer = RequestPayer.FindValue(s3BucketsOptions[BucketName].Payer);
         }
 
         internal static S3Credential DefaultCredential
@@ -104,6 +109,13 @@ namespace System.Net.S3
             {
                 return DefaultS3Credential;
             }
+        }
+
+        public S3WebRequest Clone(string key)
+        {
+            var clone = new S3WebRequest(RequestUri, log, S3Client, s3BucketsOptions);
+            clone.Key = key;
+            return clone;
         }
 
 
@@ -191,9 +203,13 @@ namespace System.Net.S3
         {
             get
             {
-                return m_Uri;
+                if (((AmazonS3Config)m_AmazonS3.Config).ForcePathStyle)
+                    return new Uri(string.Format("s3://{0}/{1}", m_BucketName, m_Key));
+                return new Uri(string.Format("s3://{0}/{1}/{2}", m_Host, m_BucketName, m_Key));
             }
         }
+
+        public AmazonS3Client S3Client => m_AmazonS3;
 
         /// <summary>
         /// <para>Timeout of the blocking calls such as GetResponse and GetRequestStream (default 100 secs)</para>
@@ -233,6 +249,18 @@ namespace System.Net.S3
             set
             {
                 m_BucketName = value;
+            }
+        }
+
+        public string Key
+        {
+            get
+            {
+                return m_Key;
+            }
+            set
+            {
+                m_Key = value;
             }
         }
 
@@ -318,7 +346,6 @@ namespace System.Net.S3
 
         public override IAsyncResult BeginGetRequestStream(AsyncCallback callback, object state)
         {
-            S3GetUploadStream asyncResult = null;
             try
             {
                 if (m_GetRequestStreamStarted)
@@ -331,23 +358,35 @@ namespace System.Net.S3
                     throw new ProtocolViolationException("GetRequestStream is not possible with method " + m_MethodInfo.Method);
                 }
                 CheckError();
-                BlockingStream uploadStream = new BlockingStream(Convert.ToUInt64(m_ContentLength));
-                asyncResult = new S3GetUploadStream(uploadStream, state, callback);
-                m_UploadStream = uploadStream;
-                Task.Run(() => callback.Invoke(asyncResult));
+                m_UploadStream = Task.Run<BlockingStream>(() => new BlockingStream(Convert.ToUInt64(m_ContentLength)));
+                var tcs = new TaskCompletionSource<BlockingStream>(state);
+                m_UploadStream.ContinueWith(t =>
+                                  {
+                                      if (t.IsFaulted)
+                                          tcs.TrySetException(t.Exception.InnerExceptions);
+                                      else if (t.IsCanceled)
+                                          tcs.TrySetCanceled();
+                                      else
+                                          tcs.TrySetResult(t.Result);
+
+                                      if (callback != null)
+                                          callback(tcs.Task);
+                                  }, TaskScheduler.Default);
+                // asyncResult = new S3GetUploadStream(uploadStream, state, callback);
+                // callback.Invoke(asyncResult);
+                // m_UploadStream = uploadStream;
+                return tcs.Task;
+
             }
             catch (Exception exception)
             {
                 log.LogError(exception, "error during GetRequestStream");
                 throw;
             }
-
-            return asyncResult;
         }
 
         public override IAsyncResult BeginGetResponse(AsyncCallback callback, object state)
         {
-            IAsyncResult asyncResult = null;
             try
             {
                 if (m_GetResponseStarted)
@@ -356,28 +395,35 @@ namespace System.Net.S3
                 }
                 m_GetResponseStarted = true;
                 CheckError();
-                // Let's make the request asynchronously
-                SubmitRequest();
-                asyncResult = new S3GetResponseStreamResult(m_ResponseTask, state);
-                if (callback != null)
+                m_ResponseTask = m_UploadStream.ContinueWith<AmazonWebServiceResponse>(t =>
                 {
-                    // Make the callback
-                    Task.Run(() => callback.Invoke(asyncResult));
-                }
+                    // Let's make the request asynchronously
+                    return SubmitRequest();
+                });
+                var tcs = new TaskCompletionSource<AmazonWebServiceResponse>(state);
+                m_ResponseTask.ContinueWith(t =>
+                                  {
+                                      if (t.IsFaulted)
+                                          tcs.TrySetException(t.Exception.InnerExceptions);
+                                      else if (t.IsCanceled)
+                                          tcs.TrySetCanceled();
+                                      else
+                                          tcs.TrySetResult(t.Result);
+
+                                      if (callback != null)
+                                          callback(tcs.Task);
+                                  }, TaskScheduler.Default);
+                return tcs.Task;
             }
             catch (Exception exception)
             {
                 log.LogError(exception, "error during GetResponse");
                 throw;
             }
-
-            return asyncResult;
         }
 
         public override Stream EndGetRequestStream(IAsyncResult asyncResult)
         {
-            Stream requestStream = null;
-
             try
             {
                 // parameter validation
@@ -386,15 +432,12 @@ namespace System.Net.S3
                     throw new ArgumentNullException("asyncResult");
                 }
 
-                S3GetUploadStream s3AsyncResult = asyncResult as S3GetUploadStream;
+                Task<BlockingStream> s3AsyncResult = asyncResult as Task<BlockingStream>;
                 if (s3AsyncResult == null)
                 {
                     throw new ArgumentException("asyncResult not an S3 async result");
                 }
-
-                CheckError();
-                requestStream = m_UploadStream;
-
+                return s3AsyncResult.Result;
             }
             catch (Exception exception)
             {
@@ -402,7 +445,6 @@ namespace System.Net.S3
                 throw;
             }
 
-            return requestStream;
         }
 
         public override WebResponse EndGetResponse(IAsyncResult asyncResult)
@@ -414,9 +456,14 @@ namespace System.Net.S3
                 {
                     throw new ArgumentNullException("asyncResult");
                 }
-                // Let's complete the request
-                CompleteRequest();
+                Task<AmazonWebServiceResponse> s3AsyncResult = asyncResult as Task<AmazonWebServiceResponse>;
+                if (s3AsyncResult == null)
+                {
+                    throw new ArgumentException("asyncResult not an S3 async result");
+                }
                 CheckError();
+
+                return CompleteRequest(s3AsyncResult.Result);
             }
 
             catch (Exception exception)
@@ -424,8 +471,6 @@ namespace System.Net.S3
                 log.LogError(exception, "error during EndGetResponse");
                 throw;
             }
-
-            return m_S3WebResponse;
         }
 
         public override WebHeaderCollection Headers
@@ -452,6 +497,8 @@ namespace System.Net.S3
             }
         }
 
+
+
         public override Stream GetRequestStream()
         {
             var result = BeginGetRequestStream(null, null);
@@ -474,29 +521,20 @@ namespace System.Net.S3
             return Task.Factory.FromAsync(BeginGetResponse, EndGetResponse, null);
         }
 
-
-
-        private void CompleteRequest()
+        private S3WebResponse CompleteRequest(AmazonWebServiceResponse response)
         {
-            m_ResponseTask.GetAwaiter().GetResult();
-            if (m_S3WebResponse != null) return;
             switch (m_MethodInfo.Operation)
             {
                 case S3Operation.GetObject:
-                    m_S3WebResponse = new S3ObjectWebResponse<GetObjectResponse>(GetStreamResponse<GetObjectResponse>());
-                    break;
+                    return new S3ObjectWebResponse<GetObjectResponse>(response);
                 case S3Operation.ListObject:
-                    m_S3WebResponse = new S3ObjectWebResponse<ListObjectsResponse>(GetStreamResponse<ListObjectsResponse>());
-                    break;
+                    return new S3ObjectWebResponse<ListObjectsResponse>(response);
                 case S3Operation.ListBuckets:
-                    m_S3WebResponse = new S3ObjectWebResponse<ListBucketsResponse>(GetStreamResponse<ListBucketsResponse>());
-                    break;
+                    return new S3ObjectWebResponse<ListBucketsResponse>(response);
                 case S3Operation.PutBucket:
-                    m_S3WebResponse = new S3ObjectWebResponse<PutBucketResponse>(GetStreamResponse<PutBucketResponse>());
-                    break;
+                    return new S3ObjectWebResponse<PutBucketResponse>(response);
                 case S3Operation.PutObject:
-                    m_S3WebResponse = new S3ObjectWebResponse<PutObjectResponse>(GetStreamResponse<PutObjectResponse>());
-                    break;
+                    return new S3ObjectWebResponse<PutObjectResponse>(response);
                 default:
                     throw new NotSupportedException("S3 operation " + m_MethodInfo.Operation + " is not supported");
             }
@@ -504,37 +542,36 @@ namespace System.Net.S3
 
 
 
-        private Task SubmitRequest()
+        private AmazonWebServiceResponse SubmitRequest()
         {
             switch (m_MethodInfo.Operation)
             {
                 case S3Operation.GetObject:
                     GetObjectRequest gorequest = CreateGetObjectRequest();
-                    m_ResponseTask = m_AmazonS3.GetObjectAsync(gorequest);
-                    break;
+                    return m_AmazonS3.GetObjectAsync(gorequest).Result;
                 case S3Operation.ListObject:
                     ListObjectsRequest lorequest = CreateListObjectsRequest();
-                    m_ResponseTask = m_AmazonS3.ListObjectsAsync(lorequest);
-                    break;
+                    return m_AmazonS3.ListObjectsAsync(lorequest).Result;
                 case S3Operation.ListBuckets:
                     ListBucketsRequest lbrequest = CreateListBucketsRequest();
-                    m_ResponseTask = m_AmazonS3.ListBucketsAsync(lbrequest);
-                    break;
+                    return m_AmazonS3.ListBucketsAsync(lbrequest).Result;
                 case S3Operation.PutBucket:
                     PutBucketRequest pbrequest = CreatePutBucketsRequest();
-                    m_ResponseTask = m_AmazonS3.PutBucketAsync(pbrequest);
-                    break;
+                    return m_AmazonS3.PutBucketAsync(pbrequest).Result;
                 case S3Operation.PutObject:
-                    PutObjectRequest porequest = CreatePutObjectRequest();
-                    m_ResponseTask = m_AmazonS3.PutObjectAsync(porequest);
-                    break;
+                    TransferUtilityUploadRequest porequest = CreatePutObjectRequest();
+                    new TransferUtility(m_AmazonS3).UploadAsync(porequest).Wait();
+                    return new PutObjectResponse()
+                    {
+                        HttpStatusCode = HttpStatusCode.OK
+                    };
+                // return m_AmazonS3.PutObjectAsync(porequest).Result;
                 default:
                     throw new NotSupportedException("S3 operation " + m_MethodInfo.Operation + " is not supported");
             }
-            return m_ResponseTask;
         }
 
-        private PutObjectRequest CreatePutObjectRequest()
+        private TransferUtilityUploadRequest CreatePutObjectRequest()
         {
             if (string.IsNullOrEmpty(m_BucketName))
                 throw new ArgumentException("Missing bucket name for PutObject operation");
@@ -542,17 +579,26 @@ namespace System.Net.S3
             if (string.IsNullOrEmpty(m_Key))
                 throw new ArgumentException("Missing key for PutObject operation");
 
-            return new PutObjectRequest
+            return new TransferUtilityUploadRequest
             {
                 BucketName = m_BucketName,
+                InputStream = m_UploadStream.Result,
                 Key = m_Key,
-                InputStream = m_UploadStream,
-                ContentType = m_ContentType,
-                // UseChunkEncoding = false,
-                // AutoResetStreamPosition = false,
-                // AutoCloseStream = false,
                 Headers = { ContentLength = m_ContentLength },
+                ContentType = m_ContentType,
+                CannedACL = S3CannedACL.BucketOwnerFullControl,
             };
+            // return new PutObjectRequest
+            // {
+            //     BucketName = m_BucketName,
+            //     Key = m_Key,
+            //     InputStream = m_UploadStream.Result,
+            //     ContentType = m_ContentType,
+            //     UseChunkEncoding = false,
+            //     AutoResetStreamPosition = false,
+            //     AutoCloseStream = false,
+            //     Headers = { ContentLength = m_ContentLength },
+            // };
         }
 
         private PutBucketRequest CreatePutBucketsRequest()
@@ -593,17 +639,15 @@ namespace System.Net.S3
             };
         }
 
-        private T GetStreamResponse<T>() where T : AmazonWebServiceResponse
-        {
-            if (m_ResponseTask == null) return null;
-            var tcs = new TaskCompletionSource<T>();
+        // private async Task<AmazonWebServiceResponse> GetStreamResponse<T>(Task<T> task) where T : AmazonWebServiceResponse
+        // {
+        //     if (task == null) return null;
+        //     var tcs = new TaskCompletionSource<AmazonWebServiceResponse>();
 
-            m_ResponseTask.ContinueWith(t => tcs.SetResult(((Task<T>)t).Result), TaskContinuationOptions.OnlyOnRanToCompletion);
-            m_ResponseTask.ContinueWith(t => tcs.SetException(t.Exception.InnerExceptions), TaskContinuationOptions.OnlyOnFaulted);
-            m_ResponseTask.ContinueWith(t => tcs.SetCanceled(), TaskContinuationOptions.OnlyOnCanceled);
+        //     tcs.SetResult((T)await task);
 
-            return tcs.Task.Result;
-        }
+        //     return await tcs.Task;
+        // }
 
 
     }
