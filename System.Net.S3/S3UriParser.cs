@@ -3,24 +3,20 @@ using Amazon.S3.Util;
 
 namespace System.Net.S3
 {
-    public class S3UriParser : UriParser
+    public class S3UriParser : GenericUriParser
     {
         private readonly Regex regEx = new Regex(@"^s3://(?'hostOrBucket'[^/]*)(/.*)?$");
 
-        GenericUriParser genericUriParser = new GenericUriParser(GetS3GenericUriParserOptions());
-
-        public S3UriParser()
+        public S3UriParser() : base(GetS3GenericUriParserOptions())
         {
         }
 
         private static GenericUriParserOptions GetS3GenericUriParserOptions()
         {
             return GenericUriParserOptions.Default
-                | GenericUriParserOptions.AllowEmptyAuthority
+                | GenericUriParserOptions.NoQuery   
                 | GenericUriParserOptions.NoFragment
-                | GenericUriParserOptions.NoPort
-                | GenericUriParserOptions.NoQuery
-                | GenericUriParserOptions.NoUserInfo;
+                | GenericUriParserOptions.NoPort;
         }
 
         protected override string GetComponents(Uri uri, UriComponents uriComponents, UriFormat format)
@@ -30,7 +26,7 @@ namespace System.Net.S3
             if (match.Success && (uriComponents == UriComponents.Path) ||
                                   (uriComponents == (UriComponents.Path | UriComponents.KeepDelimiter)))
             {
-                return uri.LocalPath.TrimStart('/').Replace(match.Groups["hostOrBucket"].Value, "");
+                return "/" + uri.LocalPath.TrimStart('/').Replace(match.Groups["hostOrBucket"].Value, "");
             }
             if (match.Success && (uriComponents == UriComponents.AbsoluteUri))
             {
