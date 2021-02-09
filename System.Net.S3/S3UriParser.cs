@@ -3,18 +3,38 @@ using Amazon.S3.Util;
 
 namespace System.Net.S3
 {
-    public class S3UriParser : GenericUriParser
+    public class S3UriParser : UriParser
     {
         private readonly Regex regEx = new Regex(@"^s3://(?'hostOrBucket'[^/]*)(/.*)?$");
 
-        public S3UriParser() : base(GetS3GenericUriParserOptions())
+        GenericUriParser genericUriParser = new GenericUriParser(GetS3GenericUriParserOptions());
+
+        public S3UriParser()
         {
+        }
+        protected override string Resolve(Uri baseUri, Uri relativeUri, out UriFormatException parsingError)
+        {
+            parsingError = null;
+            return baseUri.ToString() + relativeUri.ToString();
+        }
+
+        protected override void InitializeAndValidate(Uri uri, out UriFormatException parsingError)
+        {
+            Match match = regEx.Match(uri.OriginalString);
+            if (!match.Success)
+            {
+                parsingError = new UriFormatException("S3 Uri could not be parsed");
+            }
+            else
+            {
+                parsingError = null;
+            }
         }
 
         private static GenericUriParserOptions GetS3GenericUriParserOptions()
         {
             return GenericUriParserOptions.Default
-                | GenericUriParserOptions.NoQuery   
+                | GenericUriParserOptions.NoQuery
                 | GenericUriParserOptions.NoFragment
                 | GenericUriParserOptions.NoPort;
         }
@@ -26,51 +46,23 @@ namespace System.Net.S3
             if (match.Success && (uriComponents == UriComponents.Path) ||
                                   (uriComponents == (UriComponents.Path | UriComponents.KeepDelimiter)))
             {
-                return "/" + uri.LocalPath.TrimStart('/').Replace(match.Groups["hostOrBucket"].Value, "");
+                return uri.ToString().Replace("s3://","").Replace(match.Groups["hostOrBucket"].Value, "");
             }
             if (match.Success && (uriComponents == UriComponents.AbsoluteUri))
             {
                 return uri.OriginalString;
             }
             if (match.Success && (uriComponents == (UriComponents.SchemeAndServer | UriComponents.UserInfo) ||
-                                   uriComponents == UriComponents.SchemeAndServer ))
+                                   uriComponents == UriComponents.SchemeAndServer))
             {
                 return "s3://" + match.Groups["hostOrBucket"].Value;
             }
             if (match.Success && (uriComponents == UriComponents.Host))
             {
                 return match.Groups["hostOrBucket"].Value;
-                // if (uriComponents == UriComponents.Host)
-                // {
-                //     try
-                //     {
-                //         Dns.GetHostEntry(match.Groups["hostOrBucket"].Value);
-                //         return base.GetComponents(newUri, uriComponents, format);
-                //     }
-                //     catch
-                //     {
-                //         return "";
-                //     }
-                // }
-                // if (uriComponents == UriComponents.Path)
-                // {
-                //     try
-                //     {
-                //         Dns.GetHostEntry(match.Groups["hostOrBucket"].Value);
-                //         return base.GetComponents(newUri, uriComponents, format);
-                //     }
-                //     catch
-                //     {
-                //         return uri.OriginalString.Replace("s3:/", "");
-                //     }
-                // }
-                // UriBuilder uriBuilder = new UriBuilder(uri);
-                // uriBuilder.Path = "/" + uriBuilder.Host + uriBuilder.Path;
-                // uriBuilder.Host = null;
-                // newUri = uriBuilder.Uri;
             }
 
-            return base.GetComponents(newUri, uriComponents, format);
+            return "";
         }
     }
 }
