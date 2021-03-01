@@ -8,12 +8,6 @@ namespace System.Net.S3.Tests
     public class BaseTests
     {
 
-        // [Fact]
-        public void UriParserTests()
-        {
-            Assert.True(UriParser.IsKnownScheme("s3"));
-        }
-
         [Fact]
         public void S3WebRequestCreateTest()
         {
