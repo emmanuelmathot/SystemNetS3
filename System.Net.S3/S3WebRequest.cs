@@ -40,10 +40,7 @@ namespace System.Net.S3
         private RequestPayer m_RequestPayer;
         private Task<AmazonWebServiceResponse> m_ResponseTask = null;
         private string m_ContentType = "application/octet-stream";
-        private string m_Host;
         private readonly ILogger log;
-
-        private readonly Regex regEx = new Regex(@"^s3://(?'hostOrBucket'[^/]*)(/.*)?$");
 
         private static readonly S3Credential DefaultS3Credential = new S3Credential(null, null);
 
@@ -62,43 +59,8 @@ namespace System.Net.S3
 
         private void SetRequestParametersWithUri(Uri uri)
         {
-            try
-            {
-                AmazonS3Uri amazonS3Uri = new AmazonS3Uri(uri.ToString());
-                m_BucketName = amazonS3Uri.Bucket;
-                m_Key = amazonS3Uri.Key;
-                if (s3BucketsOptions != null && s3BucketsOptions.ContainsKey(m_BucketName))
-                    m_RequestPayer = RequestPayer.FindValue(s3BucketsOptions[BucketName].Payer);
-                return;
-            }
-            catch { }
-            Match match = regEx.Match(uri.OriginalString);
-            var absolutePath = uri.AbsolutePath;
-            if (match.Success && !((AmazonS3Config)m_AmazonS3.Config).ForcePathStyle)
-            {
-                try
-                {
-                    Dns.GetHostEntry(match.Groups["hostOrBucket"].Value);
-                    m_Host = match.Groups["hostOrBucket"].Value;
-                }
-                catch
-                {
-                    ((AmazonS3Config)m_AmazonS3.Config).ForcePathStyle = true;
-                }
-            }
-
-            if (((AmazonS3Config)m_AmazonS3.Config).ForcePathStyle) {
-                absolutePath = "/" + uri.Host + absolutePath;
-
-                var pathParts = absolutePath.Split('/');
-                if (pathParts.Length >= 2 && !string.IsNullOrEmpty(pathParts[1]))
-                {
-                    if (string.IsNullOrEmpty(m_BucketName))
-                        m_BucketName = pathParts[1];
-                    if (string.IsNullOrEmpty(m_Key))
-                        m_Key = absolutePath.Replace(m_BucketName, "").TrimStart('/');
-                }
-            }
+            m_BucketName = S3UriParser.GetBucketName(uri);
+            m_Key = S3UriParser.GetKey(uri);
             if (s3BucketsOptions != null && s3BucketsOptions.ContainsKey(m_BucketName))
                 m_RequestPayer = RequestPayer.FindValue(s3BucketsOptions[BucketName].Payer);
         }
@@ -205,7 +167,7 @@ namespace System.Net.S3
             {
                 if (((AmazonS3Config)m_AmazonS3.Config).ForcePathStyle)
                     return new Uri(string.Format("s3://{0}/{1}", m_BucketName, m_Key));
-                return new Uri(string.Format("s3://{0}/{1}/{2}", m_Host, m_BucketName, m_Key));
+                return new Uri(string.Format("s3://{0}/{1}", m_BucketName, m_Key));
             }
         }
 
