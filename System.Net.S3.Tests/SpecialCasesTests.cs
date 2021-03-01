@@ -17,7 +17,7 @@ namespace System.Net.S3.Tests
         [Fact, TestPriority(0)]
         public void S3ListBuckets()
         {
-            System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://ownder_id:bucket");
+            System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket");
             s3WebRequest.Method = "LSB";
             System.Net.S3.S3ObjectWebResponse<ListBucketsResponse> s3WebResponse = (System.Net.S3.S3ObjectWebResponse<ListBucketsResponse>)s3WebRequest.GetResponse();
 
@@ -30,9 +30,9 @@ namespace System.Net.S3.Tests
         [Fact, TestPriority(1)]
         public async Task S3CreateBucket()
         {
-            System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://ownder_id:bucket");
+            System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket");
             s3WebRequest.Method = "MKB";
-            Assert.Equal("bucket1", s3WebRequest.BucketName);
+            Assert.Equal("bucket", s3WebRequest.BucketName);
             System.Net.S3.S3ObjectWebResponse<PutBucketResponse> s3WebResponse =
                 (System.Net.S3.S3ObjectWebResponse<PutBucketResponse>)(await s3WebRequest.GetResponseAsync());
 

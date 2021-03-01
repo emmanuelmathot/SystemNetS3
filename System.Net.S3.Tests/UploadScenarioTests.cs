@@ -13,11 +13,23 @@ namespace System.Net.S3.Tests
     [TestCaseOrderer("System.Net.S3.Tests.XUnit.PriorityOrderer", "System.Net.S3.Tests")]
     public class UploadScenarioTests : BaseTests
     {
-        // 0. List no bucket
-        [Fact, TestPriority(0)]
+        // 0. Delete bucket
+        // [Fact, TestPriority(0)]
+        // public void S3DeleteBucket()
+        // {
+        //     System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1");
+        //     s3WebRequest.Method = S3RequestMethods.RemoveBucket;
+        //     System.Net.S3.S3ObjectWebResponse<DeleteBucketResponse> s3WebResponse = (System.Net.S3.S3ObjectWebResponse<DeleteBucketResponse>)s3WebRequest.GetResponse();
+
+        //     Assert.Equal(200, s3WebResponse.StatusCode);
+
+        // }
+
+        // 1. List no bucket
+        [Fact, TestPriority(1)]
         public void S3ListBuckets()
         {
-            System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://localhost");
+            System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1");
             s3WebRequest.Method = "LSB";
             System.Net.S3.S3ObjectWebResponse<ListBucketsResponse> s3WebResponse = (System.Net.S3.S3ObjectWebResponse<ListBucketsResponse>)s3WebRequest.GetResponse();
 
@@ -26,8 +38,8 @@ namespace System.Net.S3.Tests
             Assert.Equal(0, s3WebResponse.GetObject().Buckets.Count);
         }
 
-        // 1. Create a bucket
-        [Fact, TestPriority(1)]
+        // 2. Create a bucket
+        [Fact, TestPriority(2)]
         public async Task S3CreateBucket()
         {
             System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1");
@@ -39,8 +51,8 @@ namespace System.Net.S3.Tests
             Assert.Equal(200, s3WebResponse.StatusCode);
         }
 
-        // 2. List new bucket
-        [Fact, TestPriority(2)]
+        // 3. List new bucket
+        [Fact, TestPriority(3)]
         public void S3ListBuckets2()
         {
             System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://localhost");
@@ -53,44 +65,26 @@ namespace System.Net.S3.Tests
             Assert.Equal("bucket1", s3WebResponse.GetObject().Buckets.First().BucketName);
         }
 
-        // 3. Upload Test file
-        [Fact, TestPriority(3)]
+        // 4. Upload Test file
+        [Fact, TestPriority(4)]
         public async Task S3UploadFile()
         {
             System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1/testfile1.txt");
             s3WebRequest.Method = "POST";
-            s3WebRequest.ContentLength = 2 * 1024 * 1024;
+            s3WebRequest.ContentLength = 128 * 1024 * 1024;
 
             Stream uploadStream = await s3WebRequest.GetRequestStreamAsync();
-
-            Helpers.RunContentStreamGenerator(2, uploadStream);
-
+            Helpers.RunContentStreamGenerator(128 * 1024, uploadStream);
             System.Net.S3.S3WebResponse s3WebResponse = (System.Net.S3.S3WebResponse)await s3WebRequest.GetResponseAsync();
-
-            Assert.Equal(200, s3WebResponse.StatusCode);
-
-            s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1/testfile2.txt");
-            s3WebRequest.Method = "POST";
-            s3WebRequest.ContentLength = 107;
-
-            uploadStream = await s3WebRequest.GetRequestStreamAsync();
-
-            Task.Run(() =>
-            {
-                uploadStream.Write(new byte[107], 0, 107);
-                uploadStream.Close();
-            });
-
-            s3WebResponse = (System.Net.S3.S3WebResponse)await s3WebRequest.GetResponseAsync();
 
             Assert.Equal(200, s3WebResponse.StatusCode);
         }
 
-        // 4. List Test file
-        [Fact, TestPriority(4)]
+        // 5. List Test file
+        [Fact, TestPriority(5)]
         public async Task S3ListUploadedFile()
         {
-            System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1/testfile1.txt");
+            System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1/");
             s3WebRequest.Method = "LS";
 
             System.Net.S3.S3ObjectWebResponse<ListObjectsResponse> s3WebResponse =
@@ -103,8 +97,8 @@ namespace System.Net.S3.Tests
 
         }
 
-        // 5. Download Test file
-        [Fact, TestPriority(5)]
+        // 6. Download Test file
+        [Fact, TestPriority(6)]
         public async Task S3DownloadFile()
         {
             System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1/testfile1.txt");
