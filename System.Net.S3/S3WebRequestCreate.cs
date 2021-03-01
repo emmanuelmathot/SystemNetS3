@@ -2,6 +2,7 @@
 using System.Net.S3;
 using System.Reflection;
 using Amazon;
+using Amazon.Extensions.NETCore.Setup;
 using Amazon.Runtime.CredentialManagement;
 using Amazon.S3;
 using Amazon.S3.Util;
@@ -25,17 +26,20 @@ namespace System.Net.S3
         public WebRequest Create(Uri uri)
         {
             IAmazonS3 client = null;
+            AmazonS3Uri amazonS3Uri = null;
             // Create client from config
-            try
+            AmazonS3Uri.TryParseAmazonS3Uri(uri, out amazonS3Uri);
+            AWSOptions awsOptions = options;
+            if (options == null)
             {
-                if (options != null){
-                    client = options?.CreateServiceClient<IAmazonS3>();
-                }
+                awsOptions = new AWSOptions();
             }
-            catch(TargetInvocationException e)
-            {
-                throw e.InnerException;
+            client = awsOptions.CreateServiceClient<IAmazonS3>();
+            if ( amazonS3Uri == null || amazonS3Uri.IsPathStyle || S3UriParser.IsKnownScheme(uri.Scheme) ){
+                (client.Config as AmazonS3Config).ForcePathStyle = true;
             }
+            
+
             S3WebRequest s3WebRequest = new S3WebRequest(uri, logger, (AmazonS3Client)client, s3BucketsConfiguration);
             return s3WebRequest;
         }

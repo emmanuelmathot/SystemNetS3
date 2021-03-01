@@ -48,9 +48,6 @@ namespace System.Net.S3
         internal S3WebRequest(Uri uri, ILogger log, AmazonS3Client amazonS3, S3BucketsOptions s3BucketsConfiguration = null)
         {
             this.log = log;
-            if (!uri.Scheme.Equals("s3", StringComparison.CurrentCultureIgnoreCase))
-                throw new ArgumentOutOfRangeException("uri");
-
             m_AmazonS3 = amazonS3;
             this.s3BucketsOptions = s3BucketsConfiguration;
             SetRequestParametersWithUri(uri);
@@ -165,8 +162,6 @@ namespace System.Net.S3
         {
             get
             {
-                if (((AmazonS3Config)m_AmazonS3.Config).ForcePathStyle)
-                    return new Uri(string.Format("s3://{0}/{1}", m_BucketName, m_Key));
                 return new Uri(string.Format("s3://{0}/{1}", m_BucketName, m_Key));
             }
         }
@@ -330,7 +325,6 @@ namespace System.Net.S3
                                           tcs.TrySetCanceled();
                                       else
                                           tcs.TrySetResult(t.Result);
-
                                       if (callback != null)
                                           callback(tcs.Task);
                                   }, TaskScheduler.Default);
@@ -371,7 +365,6 @@ namespace System.Net.S3
                                           tcs.TrySetCanceled();
                                       else
                                           tcs.TrySetResult(t.Result);
-
                                       if (callback != null)
                                           callback(tcs.Task);
                                   }, TaskScheduler.Default);
@@ -425,7 +418,7 @@ namespace System.Net.S3
                 }
                 CheckError();
 
-                return CompleteRequest(s3AsyncResult.Result);
+                return CompleteRequest(s3AsyncResult.GetAwaiter().GetResult());
             }
 
             catch (Exception exception)
@@ -497,6 +490,8 @@ namespace System.Net.S3
                     return new S3ObjectWebResponse<PutBucketResponse>(response);
                 case S3Operation.PutObject:
                     return new S3ObjectWebResponse<PutObjectResponse>(response);
+                case S3Operation.RemoveBucket:
+                    return new S3ObjectWebResponse<DeleteBucketResponse>(response);
                 default:
                     throw new NotSupportedException("S3 operation " + m_MethodInfo.Operation + " is not supported");
             }
@@ -510,30 +505,28 @@ namespace System.Net.S3
             {
                 case S3Operation.GetObject:
                     GetObjectRequest gorequest = CreateGetObjectRequest();
-                    return m_AmazonS3.GetObjectAsync(gorequest).Result;
+                    return m_AmazonS3.GetObjectAsync(gorequest).GetAwaiter().GetResult();
                 case S3Operation.ListObject:
                     ListObjectsRequest lorequest = CreateListObjectsRequest();
-                    return m_AmazonS3.ListObjectsAsync(lorequest).Result;
+                    return m_AmazonS3.ListObjectsAsync(lorequest).GetAwaiter().GetResult();
                 case S3Operation.ListBuckets:
                     ListBucketsRequest lbrequest = CreateListBucketsRequest();
-                    return m_AmazonS3.ListBucketsAsync(lbrequest).Result;
+                    return m_AmazonS3.ListBucketsAsync(lbrequest).GetAwaiter().GetResult();
                 case S3Operation.PutBucket:
                     PutBucketRequest pbrequest = CreatePutBucketsRequest();
-                    return m_AmazonS3.PutBucketAsync(pbrequest).Result;
+                    return m_AmazonS3.PutBucketAsync(pbrequest).GetAwaiter().GetResult();
                 case S3Operation.PutObject:
-                    TransferUtilityUploadRequest porequest = CreatePutObjectRequest();
-                    new TransferUtility(m_AmazonS3).UploadAsync(porequest).Wait();
-                    return new PutObjectResponse()
-                    {
-                        HttpStatusCode = HttpStatusCode.OK
-                    };
-                // return m_AmazonS3.PutObjectAsync(porequest).Result;
+                    PutObjectRequest porequest = CreatePutObjectRequest();
+                    return m_AmazonS3.PutObjectAsync(porequest).GetAwaiter().GetResult();
+                case S3Operation.RemoveBucket:
+                    DeleteBucketRequest dbrequest = CreateDeleteBucketRequest();
+                    return m_AmazonS3.DeleteBucketAsync(dbrequest).GetAwaiter().GetResult();
                 default:
                     throw new NotSupportedException("S3 operation " + m_MethodInfo.Operation + " is not supported");
             }
         }
 
-        private TransferUtilityUploadRequest CreatePutObjectRequest()
+        private PutObjectRequest CreatePutObjectRequest()
         {
             if (string.IsNullOrEmpty(m_BucketName))
                 throw new ArgumentException("Missing bucket name for PutObject operation");
@@ -541,26 +534,27 @@ namespace System.Net.S3
             if (string.IsNullOrEmpty(m_Key))
                 throw new ArgumentException("Missing key for PutObject operation");
 
-            return new TransferUtilityUploadRequest
+            return new PutObjectRequest
             {
                 BucketName = m_BucketName,
-                InputStream = m_UploadStream.Result,
                 Key = m_Key,
-                Headers = { ContentLength = m_ContentLength },
+                InputStream = m_UploadStream.Result,
                 ContentType = m_ContentType,
-                CannedACL = S3CannedACL.BucketOwnerFullControl,
+                AutoResetStreamPosition = false,
+                AutoCloseStream = false,
+                Headers = { ContentLength = m_ContentLength },
             };
-            // return new PutObjectRequest
-            // {
-            //     BucketName = m_BucketName,
-            //     Key = m_Key,
-            //     InputStream = m_UploadStream.Result,
-            //     ContentType = m_ContentType,
-            //     UseChunkEncoding = false,
-            //     AutoResetStreamPosition = false,
-            //     AutoCloseStream = false,
-            //     Headers = { ContentLength = m_ContentLength },
-            // };
+        }
+
+        private DeleteBucketRequest CreateDeleteBucketRequest()
+        {
+            if (string.IsNullOrEmpty(m_BucketName))
+                throw new ArgumentException("Missing bucket name for DeleteBucket operation");
+
+            return new DeleteBucketRequest
+            {
+                BucketName = m_BucketName,
+            };
         }
 
         private PutBucketRequest CreatePutBucketsRequest()

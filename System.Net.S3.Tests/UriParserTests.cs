@@ -45,7 +45,7 @@ namespace System.Net.S3.Tests
             Assert.Equal("processing_results", S3UriParser.GetBucketName(s3));
             Assert.Equal("test", S3UriParser.GetKey(s3));
             var s3f = new Uri(s3, "file.jpg");
-            Assert.Equal("processing_results/test/file.jpg", s3f.AbsolutePath);
+            Assert.Equal("processing_results/file.jpg", s3f.AbsolutePath);
         }
 
         [Fact]
@@ -58,7 +58,7 @@ namespace System.Net.S3.Tests
             Assert.Equal("processing_results", S3UriParser.GetBucketName(s3));
             Assert.Equal("test/file.png", S3UriParser.GetKey(s3));
             var s3f = new Uri(s3, "file.jpg");
-            Assert.Equal("processing_results/test/file.png/file.jpg", s3f.AbsolutePath);
+            Assert.Equal("processing_results/test/file.jpg", s3f.AbsolutePath);
             s3f = new Uri(s3, "/file.jpg");
             Assert.Equal("processing_results/file.jpg", s3f.AbsolutePath);
         }
@@ -73,7 +73,7 @@ namespace System.Net.S3.Tests
             Assert.Equal("user1:processing_results", S3UriParser.GetBucketName(s3));
             Assert.Equal("test", S3UriParser.GetKey(s3));
             var s3f = new Uri(s3, "file.jpg");
-            Assert.Equal("user1:processing_results/test/file.jpg", s3f.AbsolutePath);
+            Assert.Equal("user1:processing_results/file.jpg", s3f.AbsolutePath);
         }
 
         [Fact]
