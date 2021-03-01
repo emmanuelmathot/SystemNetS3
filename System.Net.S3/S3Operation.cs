@@ -7,7 +7,7 @@ namespace System.Net.S3
         DeleteObjects,
         MoveObjects,
         PutBucket,
-        RemoveBuckets,
+        RemoveBucket,
         GetObject,
         ListBuckets,
         PutObject,

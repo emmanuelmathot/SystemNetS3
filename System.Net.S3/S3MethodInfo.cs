@@ -105,7 +105,7 @@ namespace System.Net.S3
                               | S3MethodFlags.ParameterIsBucket,
                               null),
             new S3MethodInfo(S3RequestMethods.RemoveBucket,
-                              S3Operation.RemoveBuckets,
+                              S3Operation.RemoveBucket,
                               S3MethodFlags.TakesParameter
                               | S3MethodFlags.ParameterIsBucket,
                               null),

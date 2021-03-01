@@ -39,6 +39,18 @@ namespace System.Net.S3.Tests
             Assert.Equal(200, s3WebResponse.StatusCode);
         }
 
+        // 1. Create a bucket
+        [Fact, TestPriority(1)]
+        public async Task S3DeleteBucket()
+        {
+            System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket");
+            s3WebRequest.Method = "RMB";
+            Assert.Equal("bucket", s3WebRequest.BucketName);
+            System.Net.S3.S3ObjectWebResponse<DeleteBucketResponse> s3WebResponse =
+                (System.Net.S3.S3ObjectWebResponse<DeleteBucketResponse>)(await s3WebRequest.GetResponseAsync());
+
+            Assert.Equal(204, s3WebResponse.StatusCode);
+        }
    
     }
 }

@@ -490,6 +490,8 @@ namespace System.Net.S3
                     return new S3ObjectWebResponse<PutBucketResponse>(response);
                 case S3Operation.PutObject:
                     return new S3ObjectWebResponse<PutObjectResponse>(response);
+                case S3Operation.RemoveBucket:
+                    return new S3ObjectWebResponse<DeleteBucketResponse>(response);
                 default:
                     throw new NotSupportedException("S3 operation " + m_MethodInfo.Operation + " is not supported");
             }
@@ -516,6 +518,9 @@ namespace System.Net.S3
                 case S3Operation.PutObject:
                     PutObjectRequest porequest = CreatePutObjectRequest();
                     return m_AmazonS3.PutObjectAsync(porequest).GetAwaiter().GetResult();
+                case S3Operation.RemoveBucket:
+                    DeleteBucketRequest dbrequest = CreateDeleteBucketRequest();
+                    return m_AmazonS3.DeleteBucketAsync(dbrequest).GetAwaiter().GetResult();
                 default:
                     throw new NotSupportedException("S3 operation " + m_MethodInfo.Operation + " is not supported");
             }
@@ -538,6 +543,17 @@ namespace System.Net.S3
                 AutoResetStreamPosition = false,
                 AutoCloseStream = false,
                 Headers = { ContentLength = m_ContentLength },
+            };
+        }
+
+        private DeleteBucketRequest CreateDeleteBucketRequest()
+        {
+            if (string.IsNullOrEmpty(m_BucketName))
+                throw new ArgumentException("Missing bucket name for DeleteBucket operation");
+
+            return new DeleteBucketRequest
+            {
+                BucketName = m_BucketName,
             };
         }
 
