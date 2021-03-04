@@ -92,7 +92,7 @@ namespace System.Net.S3
                               | S3MethodFlags.TakesParameter,
                               "POST"),
             new S3MethodInfo(S3RequestMethods.DeleteObject,
-                              S3Operation.DeleteObjects,
+                              S3Operation.DeleteObject,
                               S3MethodFlags.TakesParameter,
                               "DELETE"),
             new S3MethodInfo(S3RequestMethods.Move,
