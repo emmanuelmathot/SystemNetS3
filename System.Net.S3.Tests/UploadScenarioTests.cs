@@ -125,5 +125,16 @@ namespace System.Net.S3.Tests
             Assert.Equal(128 * 1024 * 1024, i);
 
         }
+
+        // 7. Delete Test file
+        [Fact, TestPriority(7)]
+        public async Task S3DeleteFile()
+        {
+            System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1/testfile1.txt");
+            s3WebRequest.Method = "RM";
+
+            System.Net.S3.S3WebResponse s3WebResponse = (System.Net.S3.S3WebResponse)await s3WebRequest.GetResponseAsync();
+            Assert.Equal(204, s3WebResponse.StatusCode);
+        }
     }
 }
