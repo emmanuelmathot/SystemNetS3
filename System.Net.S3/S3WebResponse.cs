@@ -21,8 +21,8 @@ namespace System.Net.S3
 
         public override Stream GetResponseStream()
         {
-            if (StreamResponse.GetType() == typeof(GetObjectResponse))
-                return ((GetObjectResponse)StreamResponse).ResponseStream;
+            if (StreamResponse.GetType() == typeof(GetSeekableObjectResponse))
+                return ((GetSeekableObjectResponse)StreamResponse).SeekableStream;
             return null;
         }
 
