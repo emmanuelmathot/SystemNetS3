@@ -126,8 +126,39 @@ namespace System.Net.S3.Tests
 
         }
 
-        // 7. Delete Test file
+        // 7. Download Range Test file
         [Fact, TestPriority(7)]
+        public async Task S3DownloadRangedFile()
+        {
+            System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1/testfile1.txt");
+            s3WebRequest.Method = "GET";
+
+            long i = 0;
+
+            System.Net.S3.S3WebResponse s3WebResponse = (System.Net.S3.S3WebResponse)await s3WebRequest.GetResponseAsync();
+            Assert.Equal(200, s3WebResponse.StatusCode);
+            Assert.Equal("application/octet-stream", s3WebResponse.ContentType);
+            Assert.Equal(128 * 1024 * 1024, s3WebResponse.ContentLength);
+
+            using (Stream s3WebResponseStream = s3WebResponse.GetResponseStream())
+            {
+                s3WebResponseStream.Seek(120 * 1024 * 1024, 0);
+                Assert.Equal(120 * 1024 * 1024, s3WebResponseStream.Position);
+                int j = 0;
+                do
+                {
+                    j = s3WebResponseStream.Read(new byte[1024], 0, 1024);
+                    i += j;
+                }
+                while (j > 0);
+            }
+
+            Assert.Equal(8 * 1024 * 1024, i);
+
+        }
+
+        // 10. Delete Test file
+        [Fact, TestPriority(10)]
         public async Task S3DeleteFile()
         {
             System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1/testfile1.txt");

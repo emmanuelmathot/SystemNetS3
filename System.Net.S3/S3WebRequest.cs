@@ -481,7 +481,7 @@ namespace System.Net.S3
             switch (m_MethodInfo.Operation)
             {
                 case S3Operation.GetObject:
-                    return new S3ObjectWebResponse<GetObjectResponse>(response);
+                    return new S3ObjectWebResponse<GetSeekableObjectResponse>(response);
                 case S3Operation.ListObject:
                     return new S3ObjectWebResponse<ListObjectsResponse>(response);
                 case S3Operation.ListBuckets:
@@ -506,8 +506,8 @@ namespace System.Net.S3
             switch (m_MethodInfo.Operation)
             {
                 case S3Operation.GetObject:
-                    GetObjectRequest gorequest = CreateGetObjectRequest();
-                    return m_AmazonS3.GetObjectAsync(gorequest).GetAwaiter().GetResult();
+                    SeekableS3Stream seekableS3Stream = CreateGetSeekableObjectRequest();
+                    return new GetSeekableObjectResponse(seekableS3Stream);
                 case S3Operation.ListObject:
                     ListObjectsRequest lorequest = CreateListObjectsRequest();
                     return m_AmazonS3.ListObjectsAsync(lorequest).GetAwaiter().GetResult();
@@ -606,6 +606,21 @@ namespace System.Net.S3
                 Key = m_Key,
                 RequestPayer = m_RequestPayer
             };
+        }
+
+        private GetObjectMetadataRequest CreateGetObjectMetadataRequest()
+        {
+            return new GetObjectMetadataRequest
+            {
+                BucketName = m_BucketName,
+                Key = m_Key,
+                RequestPayer = m_RequestPayer
+            };
+        }
+
+        private SeekableS3Stream CreateGetSeekableObjectRequest()
+        {
+            return new SeekableS3Stream(m_AmazonS3, m_BucketName, m_Key, m_RequestPayer);
         }
 
         private ListBucketsRequest CreateListBucketsRequest()

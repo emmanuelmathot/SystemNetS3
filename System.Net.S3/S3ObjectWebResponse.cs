@@ -21,8 +21,8 @@ namespace System.Net.S3
         {
             get
             {
-                if (StreamResponse.GetType() == typeof(GetObjectResponse))
-                    return ((GetObjectResponse)StreamResponse).Headers["Content-Type"];
+                if (StreamResponse.GetType() == typeof(GetSeekableObjectResponse))
+                    return ((GetSeekableObjectResponse)StreamResponse).ContentType;
                 return base.ContentType;
             }
         }
