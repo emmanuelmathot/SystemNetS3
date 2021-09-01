@@ -29,9 +29,9 @@ namespace System.Net.S3
                 return baseUri.ToString();
             string keypath = Path.GetDirectoryName(GetKey(baseUri));
             if (keypath == null) keypath = "";
-            return string.Format("s3://{0}/{1}",
+            return string.Format("s3://{0}{1}",
                                 GetBucketName(baseUri),
-                                Path.Combine(keypath, relativeUri.ToString()).TrimStart('/'));
+                                Path.GetFullPath("/" + Path.Combine(keypath, relativeUri.ToString()).TrimStart('/')));
         }
 
         protected override void InitializeAndValidate(Uri uri, out UriFormatException parsingError)

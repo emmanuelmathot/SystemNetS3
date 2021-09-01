@@ -23,6 +23,8 @@ namespace System.Net.S3
             {
                 if (StreamResponse.GetType() == typeof(GetSeekableObjectResponse))
                     return ((GetSeekableObjectResponse)StreamResponse).ContentType;
+                if (StreamResponse.GetType() == typeof(GetObjectResponse))
+                    return ((GetObjectResponse)StreamResponse).Headers.ContentType;
                 return base.ContentType;
             }
         }

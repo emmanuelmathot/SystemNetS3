@@ -7,16 +7,19 @@ namespace System.Net.S3.Tests
 {
     internal class Helpers
     {
-        internal static void RunContentStreamGenerator(int sizeInKB, Stream stream)
+        internal static void RunContentStreamGenerator(int sizeInKB, Stream stream, int bufferSize)
         {
-            byte[] data = new byte[1024];
+            byte[] data = new byte[bufferSize];
             Random rng = new Random();
+            int bytesWritten = 0;
             Task.Run(() =>
             {
-                for (int i = 0; i < sizeInKB; i++)
+                while (bytesWritten < sizeInKB * 1024)
                 {
+                    int l = bytesWritten + data.Length > sizeInKB * 1024 ? sizeInKB * 1024 - bytesWritten : data.Length;
                     rng.NextBytes(data);
-                    stream.Write(data, 0, data.Length);
+                    stream.Write(data, 0, l);
+                    bytesWritten += l;
                 }
                 stream.Close();
             });

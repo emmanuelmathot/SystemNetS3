@@ -336,7 +336,7 @@ namespace System.Net.S3
             }
             catch (Exception exception)
             {
-                log.LogError(exception, "error during GetRequestStream");
+                log.LogDebug(exception, "error during GetRequestStream");
                 throw;
             }
         }
@@ -372,7 +372,7 @@ namespace System.Net.S3
             }
             catch (Exception exception)
             {
-                log.LogError(exception, "error during GetResponse");
+                log.LogDebug(exception, "error during GetResponse");
                 throw;
             }
         }
@@ -396,7 +396,7 @@ namespace System.Net.S3
             }
             catch (Exception exception)
             {
-                log.LogError(exception, "error during EndGetRequestStream");
+                log.LogDebug(exception, "error during EndGetRequestStream");
                 throw;
             }
 
@@ -423,7 +423,7 @@ namespace System.Net.S3
 
             catch (Exception exception)
             {
-                log.LogError(exception, "error during EndGetResponse");
+                log.LogDebug(exception, "error during EndGetResponse");
                 throw;
             }
         }
@@ -481,6 +481,8 @@ namespace System.Net.S3
             switch (m_MethodInfo.Operation)
             {
                 case S3Operation.GetObject:
+                    return new S3ObjectWebResponse<GetObjectResponse>(response);
+                case S3Operation.GetSeekableObject:
                     return new S3ObjectWebResponse<GetSeekableObjectResponse>(response);
                 case S3Operation.ListObject:
                     return new S3ObjectWebResponse<ListObjectsResponse>(response);
@@ -506,6 +508,9 @@ namespace System.Net.S3
             switch (m_MethodInfo.Operation)
             {
                 case S3Operation.GetObject:
+                    GetObjectRequest gorequest = CreateGetObjectRequest();
+                    return m_AmazonS3.GetObjectAsync(gorequest).GetAwaiter().GetResult();
+                case S3Operation.GetSeekableObject:
                     SeekableS3Stream seekableS3Stream = CreateGetSeekableObjectRequest();
                     return new GetSeekableObjectResponse(seekableS3Stream);
                 case S3Operation.ListObject:

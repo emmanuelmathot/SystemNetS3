@@ -72,9 +72,10 @@ namespace System.Net.S3.Tests
             System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1/testfile1.txt");
             s3WebRequest.Method = "POST";
             s3WebRequest.ContentLength = 128 * 1024 * 1024;
+            s3WebRequest.ContentType = "application/octet-stream";
 
             Stream uploadStream = await s3WebRequest.GetRequestStreamAsync();
-            Helpers.RunContentStreamGenerator(128 * 1024, uploadStream);
+            Helpers.RunContentStreamGenerator(128 * 1024, uploadStream, 1024*1024);
             System.Net.S3.S3WebResponse s3WebResponse = (System.Net.S3.S3WebResponse)await s3WebRequest.GetResponseAsync();
 
             Assert.Equal(200, s3WebResponse.StatusCode);
@@ -131,7 +132,7 @@ namespace System.Net.S3.Tests
         public async Task S3DownloadRangedFile()
         {
             System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1/testfile1.txt");
-            s3WebRequest.Method = "GET";
+            s3WebRequest.Method = "GETR";
 
             long i = 0;
 
