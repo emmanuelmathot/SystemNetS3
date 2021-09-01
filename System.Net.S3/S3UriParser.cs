@@ -93,23 +93,18 @@ namespace System.Net.S3
         {
             Uri newUri = uri;
             Match match = PathStyleRegEx.Match(uri.OriginalString);
-            if (match.Success && (uriComponents == UriComponents.Path) ||
-                                  (uriComponents == (UriComponents.Path | UriComponents.KeepDelimiter)))
+            if (match.Success)
             {
-                return GetBucketName(uri) + "/" + GetKey(uri);
-            }
-            if (match.Success && (uriComponents == UriComponents.AbsoluteUri))
-            {
-                return uri.OriginalString;
-            }
-            if (match.Success && (uriComponents == (UriComponents.SchemeAndServer | UriComponents.UserInfo) ||
-                                   uriComponents == UriComponents.SchemeAndServer))
-            {
-                return "s3://";
-            }
-            if (match.Success && (uriComponents == UriComponents.Host))
-            {
-                return "";
+                if ((uriComponents == UriComponents.Path) ||
+                                      (uriComponents == (UriComponents.Path | UriComponents.KeepDelimiter))) 
+                                    return GetBucketName(uri) + "/" + GetKey(uri);
+
+                if ((uriComponents == UriComponents.AbsoluteUri)) return uri.OriginalString;
+                if (uriComponents == (UriComponents.SchemeAndServer | UriComponents.UserInfo) ||
+                                   uriComponents == UriComponents.SchemeAndServer) return "s3://";
+                if (uriComponents == UriComponents.Host) return "";
+                if (uriComponents == UriComponents.StrongPort) return "";
+                if (uriComponents == UriComponents.HttpRequestUrl) return uri.OriginalString;
             }
 
             return uri.OriginalString;
