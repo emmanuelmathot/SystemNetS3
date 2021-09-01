@@ -112,7 +112,7 @@ namespace System.Net.S3
                 return "";
             }
 
-            return "";
+            return uri.OriginalString;
         }
 
 
