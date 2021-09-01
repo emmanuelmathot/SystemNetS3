@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using Xunit;
 
@@ -108,6 +110,18 @@ namespace System.Net.S3.Tests
             Uri s3 = new Uri("s3://catalog/calls/call-857/acquisitions/857-USGS-WORLDVIEW_3-USGS-WORLDVIEW3-WV03S00_875416E119_8883332018100200000000MS00/857-USGS-WORLDVIEW_3-USGS-WORLDVIEW3-WV03S00_875416E119_8883332018100200000000MS00.json");
             Uri news3 = new Uri(s3, "../../datasets/WV03S00_875416E119_8883332018100200000000MS00/WV03S00_875416E119_8883332018100200000000MS00.json");
             Assert.Equal("s3://catalog/calls/call-857/datasets/WV03S00_875416E119_8883332018100200000000MS00/WV03S00_875416E119_8883332018100200000000MS00.json", news3.ToString());
+            Assert.Equal("", s3.GetLeftPart(UriPartial.Authority));
         }
+
+        [Fact]
+        public void UriGrouping()
+        {
+            List<Uri> uris = new List<Uri>();
+            uris.Add(new Uri("s3://catalog/calls/call-857/acquisitions/857-USGS-WORLDVIEW_3-USGS-WORLDVIEW3-WV03S00_875416E119_8883332018100200000000MS00/857-USGS-WORLDVIEW_3-USGS-WORLDVIEW3-WV03S00_875416E119_8883332018100200000000MS00.json"));
+            uris.Add(new Uri("s3://catalog/calls/call-857/acquisitions/catalog.json"));
+            var groupedUris = uris.GroupBy(uri => uri).Select(grp => grp.First()).ToList();
+            Assert.Equal(2, groupedUris.Count);
+        }
+        
     }
 }

@@ -11,5 +11,6 @@ namespace System.Net.S3
         public const string Move = "MV";
         public static string UploadObject = "POST";
         public static string ListBuckets = "LSB";
+        public static string Copy = "CP";
     }
 }
