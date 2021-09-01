@@ -1,13 +1,12 @@
 using System;
+using System.IO;
 using System.Net;
 using Xunit;
 
 namespace System.Net.S3.Tests
 {
-    [Collection(nameof(S3TestCollection))]
-    public class S3UriParserTests
+    public class S3UriParserTests : IClassFixture<WebRequestFixture>
     {
-
         [Fact]
         public void UriParserIsKnowScheme()
         {
@@ -103,7 +102,12 @@ namespace System.Net.S3.Tests
             Assert.Equal("puppy.png", S3UriParser.GetKey(s3));
         }
 
-        
-
+        [Fact]
+        public void UriRelPathAppend()
+        {
+            Uri s3 = new Uri("s3://catalog/calls/call-857/acquisitions/857-USGS-WORLDVIEW_3-USGS-WORLDVIEW3-WV03S00_875416E119_8883332018100200000000MS00/857-USGS-WORLDVIEW_3-USGS-WORLDVIEW3-WV03S00_875416E119_8883332018100200000000MS00.json");
+            Uri news3 = new Uri(s3, "../../datasets/WV03S00_875416E119_8883332018100200000000MS00/WV03S00_875416E119_8883332018100200000000MS00.json");
+            Assert.Equal("s3://catalog/calls/call-857/datasets/WV03S00_875416E119_8883332018100200000000MS00/WV03S00_875416E119_8883332018100200000000MS00.json", news3.ToString());
+        }
     }
 }

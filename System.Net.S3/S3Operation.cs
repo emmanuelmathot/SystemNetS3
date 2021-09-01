@@ -11,5 +11,6 @@ namespace System.Net.S3
         GetObject,
         ListBuckets,
         PutObject,
+        GetSeekableObject,
     }
 }

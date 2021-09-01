@@ -74,6 +74,14 @@ namespace System.Net.S3
                               | S3MethodFlags.ParameterIsBucket
                               | S3MethodFlags.ParameterIsKey,
                               "GET"),
+            new S3MethodInfo(S3RequestMethods.DownloadRangedObject,
+                              S3Operation.GetSeekableObject,
+                              S3MethodFlags.IsDownload
+                              | S3MethodFlags.HasHttpCommand
+                              | S3MethodFlags.TakesParameter
+                              | S3MethodFlags.ParameterIsBucket
+                              | S3MethodFlags.ParameterIsKey,
+                              "GET"),
             new S3MethodInfo(S3RequestMethods.ListObject,
                               S3Operation.ListObject,
                               S3MethodFlags.HasHttpCommand

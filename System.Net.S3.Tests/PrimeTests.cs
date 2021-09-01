@@ -4,7 +4,6 @@ using Xunit;
 
 namespace System.Net.S3.Tests
 {
-    [Collection(nameof(S3TestCollection))]
     public class BaseTests
     {
 
