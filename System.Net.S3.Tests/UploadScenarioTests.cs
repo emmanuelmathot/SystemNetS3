@@ -98,8 +98,23 @@ namespace System.Net.S3.Tests
 
         }
 
-        // 6. Download Test file
+        // 6. List Test file
         [Fact, TestPriority(6)]
+        public async Task S3CopyUploadedFile()
+        {
+            System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1/testfile1.txt");
+            s3WebRequest.Method = "CP";
+            s3WebRequest.CopyTo = new Uri("s3://bucket1/testfile2.txt");
+
+            System.Net.S3.S3ObjectWebResponse<CopyObjectResponse> s3WebResponse =
+                (System.Net.S3.S3ObjectWebResponse<CopyObjectResponse>)await s3WebRequest.GetResponseAsync();
+
+            Assert.Equal(200, s3WebResponse.StatusCode);
+
+        }
+
+        // 7. Download Test file
+        [Fact, TestPriority(7)]
         public async Task S3DownloadFile()
         {
             System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1/testfile1.txt");
@@ -127,11 +142,11 @@ namespace System.Net.S3.Tests
 
         }
 
-        // 7. Download Range Test file
-        [Fact, TestPriority(7)]
+        // 8. Download Range Test file
+        [Fact, TestPriority(8)]
         public async Task S3DownloadRangedFile()
         {
-            System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1/testfile1.txt");
+            System.Net.S3.S3WebRequest s3WebRequest = (System.Net.S3.S3WebRequest)WebRequest.Create("s3://bucket1/testfile2.txt");
             s3WebRequest.Method = "GETR";
 
             long i = 0;

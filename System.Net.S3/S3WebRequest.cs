@@ -19,7 +19,8 @@ namespace System.Net.S3
         private static UriParser S3Uri = new GenericUriParser(GenericUriParserOptions.Default);
 
         private S3MethodInfo m_MethodInfo;
-        private string m_MoveTo;
+        private Uri m_MoveTo;
+        private Uri m_CopyTo;
         private int m_Timeout;
         private long m_ContentLength;
         private string m_ConnectionGroupName;
@@ -119,7 +120,7 @@ namespace System.Net.S3
         /// Not allowed to be changed once request is started.
         /// </para>
         /// </summary>
-        public string MoveTo
+        public Uri MoveTo
         {
             get
             {
@@ -132,12 +133,40 @@ namespace System.Net.S3
                     throw new InvalidOperationException("Cannot change target while request in use");
                 }
 
-                if (String.IsNullOrEmpty(value))
+                if (value == null)
                 {
                     throw new ArgumentException("target for move must not be null or empty");
                 }
 
                 m_MoveTo = value;
+            }
+        }
+
+        /// <summary>
+        /// <para>
+        /// Sets the target name for the S3RequestMethods.Copy operation
+        /// Not allowed to be changed once request is started.
+        /// </para>
+        /// </summary>
+        public Uri CopyTo
+        {
+            get
+            {
+                return m_CopyTo;
+            }
+            set
+            {
+                if (InUse)
+                {
+                    throw new InvalidOperationException("Cannot change target while request in use");
+                }
+
+                if (value == null)
+                {
+                    throw new ArgumentException("target for move must not be null or empty");
+                }
+
+                m_CopyTo = value;
             }
         }
 
@@ -492,6 +521,8 @@ namespace System.Net.S3
                     return new S3ObjectWebResponse<PutBucketResponse>(response);
                 case S3Operation.PutObject:
                     return new S3ObjectWebResponse<PutObjectResponse>(response);
+                case S3Operation.CopyObject:
+                    return new S3ObjectWebResponse<CopyObjectResponse>(response);
                 case S3Operation.DeleteObject:
                     return new S3ObjectWebResponse<DeleteObjectResponse>(response);
                 case S3Operation.RemoveBucket:
@@ -525,6 +556,9 @@ namespace System.Net.S3
                 case S3Operation.PutObject:
                     PutObjectRequest porequest = CreatePutObjectRequest();
                     return m_AmazonS3.PutObjectAsync(porequest).GetAwaiter().GetResult();
+                case S3Operation.CopyObject:
+                    CopyObjectRequest corequest = CreateCopyObjectRequest();
+                    return m_AmazonS3.CopyObjectAsync(corequest).GetAwaiter().GetResult();
                 case S3Operation.DeleteObject:
                     DeleteObjectRequest dorequest = CreateDeleteObjectRequest();
                     return m_AmazonS3.DeleteObjectAsync(dorequest).GetAwaiter().GetResult();
@@ -568,6 +602,23 @@ namespace System.Net.S3
                 AutoResetStreamPosition = false,
                 AutoCloseStream = false,
                 Headers = { ContentLength = m_ContentLength },
+            };
+        }
+
+        private CopyObjectRequest CreateCopyObjectRequest()
+        {
+            if (string.IsNullOrEmpty(m_BucketName))
+                throw new ArgumentException("Missing bucket name for CopyObject operation");
+
+            if (string.IsNullOrEmpty(m_Key))
+                throw new ArgumentException("Missing key for CopyObject operation");
+
+            return new CopyObjectRequest
+            {
+                SourceBucket = m_BucketName,
+                SourceKey = m_Key,
+                DestinationBucket = S3UriParser.GetBucketName(m_CopyTo),
+                DestinationKey = S3UriParser.GetKey(m_CopyTo)
             };
         }
 

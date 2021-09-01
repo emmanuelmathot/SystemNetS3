@@ -107,7 +107,7 @@ namespace System.Net.S3
                 if (uriComponents == UriComponents.HttpRequestUrl) return uri.OriginalString;
             }
 
-            return uri.OriginalString;
+            return "";
         }
 
 

@@ -2,7 +2,7 @@ namespace System.Net.S3
 {
     internal enum S3Operation
     {
-        CopyObjects,
+        CopyObject,
         ListObject,
         DeleteObject,
         MoveObjects,

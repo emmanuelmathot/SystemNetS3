@@ -106,7 +106,11 @@ namespace System.Net.S3
             new S3MethodInfo(S3RequestMethods.Move,
                               S3Operation.MoveObjects,
                               S3MethodFlags.TakesParameter,
-                              null),
+                              "MV"),
+            new S3MethodInfo(S3RequestMethods.Copy,
+                              S3Operation.CopyObject,
+                              S3MethodFlags.TakesParameter,
+                              "MV"),
             new S3MethodInfo(S3RequestMethods.CreateBucket,
                               S3Operation.PutBucket,
                               S3MethodFlags.TakesParameter
