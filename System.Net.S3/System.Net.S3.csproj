@@ -5,7 +5,7 @@
     <Title>System.Net.S3</Title>
     <Description>Library for using S3 as WebRequests</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <Version>0.4.1</Version>
+    <Version>0.4.2</Version>
     <Authors>Emmanuel Mathot</Authors>
     <Authors>emmanuelmathot</Authors>
     <RepositoryUrl>https://github.com/emmanuelmathot/SystemNetS3</RepositoryUrl>
