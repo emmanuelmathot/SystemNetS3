@@ -195,6 +195,12 @@ namespace System.Net.S3
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <value></value>
+        public override bool PreAuthenticate { get => false; set { } }
+
         public AmazonS3Client S3Client => m_AmazonS3;
 
         /// <summary>
