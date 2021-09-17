@@ -5,7 +5,7 @@
     <Title>System.Net.S3</Title>
     <Description>Library for using S3 as WebRequests</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <Version>0.4.2</Version>
+    <Version>0.4.3</Version>
     <Authors>Emmanuel Mathot</Authors>
     <Authors>emmanuelmathot</Authors>
     <RepositoryUrl>https://github.com/emmanuelmathot/SystemNetS3</RepositoryUrl>
@@ -14,11 +14,12 @@
     <PackageTags>S3;Amazon;Net;Request</PackageTags>
     <PackageIcon>s3logo.png</PackageIcon>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <NoWarn>NU1605</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.9"/>
-    <PackageReference Include="AWSSDK.S3" Version="3.5.8.3"/>
-    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.3.101"/>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.*"/>
+    <PackageReference Include="AWSSDK.S3" Version="3.5.*"/>
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.3.*"/>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\LICENSE" Pack="true" PackagePath=""/>
